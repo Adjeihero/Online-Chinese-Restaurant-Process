@@ -1,0 +1,329 @@
+\documentclass[11pt]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{bayesnet}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{caption}
+\captionsetup[algorithm]{labelsep=colon}
+\usetikzlibrary{3d, shapes.geometric,automata, shapes, arrows.meta, positioning, fit, calc, backgrounds}
+
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, text centered, rounded corners, minimum height=2em]
+\tikzstyle{line} = [draw, -Stealth]
+\tikzstyle{container} = [draw, rectangle, dashed, inner sep=0.7em]
+
+\usepackage{graphicx}
+\usetheme{CambridgeUS}
+\begin{document}
+	\author{Emmanuel Adjei\\
+		University of California, Irvine\\
+		Statistics Department}
+	\title{
+	Online Chinese Restaurant Process }
+	%\subtitle{}
+	%\logo{}
+	%\institute{}
+	%\date{}
+	%\subject{}
+	%\setbeamercovered{transparent}
+	%\setbeamertemplate{navigation symbols}{}
+	\begin{frame}[plain]
+		\maketitle
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{OUTLINE}
+		\begin{itemize}
+			\item Introduction
+			\item Online Learning Framework for Linear Classification
+				\item Dirichlet Process Mixture Models 
+				\item 	Online Chinese Restaurant Process 
+				\item Experimental Results
+				\item Conclusions 
+			\item Reference
+		\end{itemize}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Introduction}
+		
+		\begin{figure}
+			\centering
+			\includegraphics[width=0.4\linewidth]{data.jpg} 
+			\caption{Source:https://www.scribbr.com/ai-tools/machine-learning/}
+			\label{fig: Source: https://www.scribbr.com/ai-tools/machine-learning/} % Changed the label to a proper one
+		\end{figure}
+	
+Big data originates from computers, phones, and sensor networks. Processing this vast amount of data has become a significant challenge for many researchers, highlighting the need to develop effective algorithms for data processing. Some methods to tackle this issue include partitioning the data and using online learning approaches.
+
+		
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Online Learning Framework for Linear Classification}
+Online learning operates on a sequence of data samples with time stamps. At each step $t$, the learner receives an incoming sample $\mathbf{x}_t \in \mathcal{X}$ in a $k$-dimensional vector space, that is, $\mathcal{X}=\mathbb{R}^k$ [1].
+		
+\begin{itemize}
+	\item  Initialize: $\mathbf{w}_1=0$
+	{$t=1,2, \ldots, T$}
+	\item The learner receives an incoming instance: $\mathbf{x}_t \in \mathcal{X}$;
+	\item The learner predicts the class label: $\hat{y}_t=\operatorname{sgn}\left(f\left(\mathbf{x}_t ; \mathbf{w}_t\right)\right)$;
+	\item  The true class label is revealed from the environment: $y_t \in \mathcal{Y}$;
+	\item The learner calculates the  loss: $\ell\left(\mathbf{w}_t ;\left(\mathbf{x}_t, y_t\right)\right)$;
+	If {$\ell\left(\mathbf{w}_t ;\left(\mathbf{x}_t, y_t\right)\right)>0$}
+	\item The learner updates the classification model:
+	$\mathbf{w}_{t+1} \leftarrow \mathbf{w}_t+\Delta\left(\mathbf{w}_t ;\left(\mathbf{x}_t, y_t\right)\right) ;$ 	
+\end{itemize}
+
+
+	\end{frame}
+
+
+	
+	
+	\begin{frame}
+\frametitle{Dirichlet Process Mixture Models}
+
+\begin{block}{Dirichlet Process}
+	
+	A DP is a distribution over probability measures.
+	A DP has two parameters, base measure $\theta$ (as the mean), and a concentration parameter $\alpha$ (as precision). Denote it by $\mathrm{DP}(\alpha, \theta)$
+\end{block}
+
+Therefore if  a probability measure $G \sim \operatorname{DP}(\alpha, \theta)$, then
+$$
+\left(G\left(B_1\right), \ldots, G\left(B_K\right)\right) \sim \operatorname{Dir}\left(\alpha \theta\left(B_1\right), \ldots, \alpha \theta\left(B_K\right)\right)
+$$
+for any finite measurable partition $\left(B_1, \ldots, B_K\right)$ of $\Omega$.\\
+
+This is based on the idea behind Dirichlet distribution. Supposed $K$-dimensional weight vector $\left(\pi_1, \ldots, \pi_K\right)$ satisfying $\sum \pi_i=1$ and each $\pi_i \geq 0$, we can define a Dirichlet distribution with parameter $\left(\alpha_1, \ldots, \alpha_K\right)$ with a density [3]
+$$
+\frac{\Gamma\left(\sum_k \alpha_k\right)}{\prod_k \Gamma\left(\alpha_k\right)} \prod_{k=1}^K \pi_k^{\alpha_k-1}
+$$
+	\end{frame}
+	
+	
+	\begin{frame}
+		\frametitle{Dirichlet Process Mixture Models}
+DP mixture is essentially a convolution of a continuous kernel $K\left(y \mid \theta_i, \phi\right)$
+		with a DP discrete realization. By convolution, we gain easy
+		interpretation (clustering) and smooth functions, e.g., densities.
+$$
+\begin{aligned}
+	& Y \mid \theta_i, \phi \sim K\left(y \mid \theta_i, \phi\right) \\.
+\end{aligned}
+$$
+
+
+Consider a DP mixture model:
+$$
+y_i\left|\theta_i \sim K\left(y_i \mid \theta_i\right), \theta_i\right| G \sim G, G \sim D P\left(\alpha, G_0\right) .
+$$
+$\theta_i$ 's are subject-level random effects, and there will be duplicates (because $G$ is discrete)[3].
+		
+
+	\end{frame}
+	
+	
+	\begin{frame}
+		\frametitle{Chinese Restaurant Process}
+		\begin{itemize}
+			\item The Chinese restaurant process (CRP)  mixture model is
+			one of the representations of the DP mixture model.
+			\item The Chinese restaurant process (CRP) , a discrete-time
+			stochastic process, defines a distribution over partitions that embodies the assumed prior distribution over cluster structures
+		\end{itemize}
+ Imagine a Chinese restaurant with an infinite number of tables each with infinite capacity, and a sequence of $n$ customers who enter the restaurant and sit down. The first customer enters the restaurant and sits at the first table. The $i$ th subsequent customer sits at an occupied table, or at the next unoccupied table as follows:
+
+
+$
+P\left(z_i=j \mid z_{-i}, \alpha\right) \quad \propto \begin{cases}\frac{m_j}{i-1+\alpha} & \text { if } j \leq k \\ \frac{\alpha}{i-1+\alpha} & \text { if } j=k+1\end{cases}
+$
+where $m_j$ is the number of people siting  on table $j$ or sits at a new table with a probability that is proportional to $\alpha$.The tables are analogous
+to clusters, and customers to observations or data points.
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Properties of Chinese Restaurant Process }
+
+	\begin{figure}
+	\centering
+	\includegraphics[width=0.6\linewidth]{table.png} 
+	\caption{Source:https://www.scribbr.com/ai-tools/machine-learning/}
+	\label{fig: Source: https://www.scribbr.com/ai-tools/machine-learning/} % Changed the label to a proper one
+\end{figure}		
+		
+\begin{itemize}
+	\item The CRP exhibits a clustering property due to a rich-gets-richer phenomenon, since it is proportional to $m_j$.
+	\item Each customer's assignment to a new table is positive.
+\end{itemize}		
+
+	\end{frame}
+	
+	
+	\begin{frame}
+		\frametitle{Online Chinese Restaurant Process }
+\begin{block}{Online learning properties}
+\begin{itemize}
+	\item True label information is available after the predictions are made.
+	\item The model can use the true label and cost label to refine the predictive model.
+\end{itemize}
+\end{block}	
+
+Several differences exist between the
+two processes: 
+\begin{itemize}
+	\item The CRP is an unsupervised learning
+	method, and it is usually used in clustering applications. Conversely, the online CRP is an online algorithm, in which
+	the label information $y_i$ is available after the prediction of
+	$x_i$ is made.
+	\item Second, the prior of the online CRP differs
+	from that of the CRP.
+	\item  Third, the movement of the datum
+	xi between classes simultaneously alters the parameters of
+	the classes that are indexed as $z_i$ and $y_i$ in the online CRP.
+\end{itemize}
+
+	\end{frame}
+	\begin{frame}
+		\frametitle{Online Chinese Restaurant Process}
+		\begin{block}{Relaxing Function}
+		 It is noted that table assignments for $i$ th customer comprise two results, one is assigned by waiter, denoted as $z_i$, and the other one is the final sitting table, represented as $y_i$. For table $j$ and customer $i, f_j$ and $e_j$ track the misassignment of the previous $i-1$ customers as shown in Equation (2), where $\mathbb{I}$ is an indicator function.
+		\end{block}
+	
+	$$
+	\begin{gathered}
+		f_j=\sum_{a=1}^{i-1} \mathbb{I}\left\{y_a=j \wedge z_a \neq j\right\} \\
+		e_j=\sum_{a=1}^{i-1} \mathbb{I}\left\{z_a=j \wedge y_a \neq j\right\} \\
+		g\left(\gamma_1, \gamma_2, e_j, f_j\right)=\left(1+\gamma_1\right)^{f_j}\left(1-\gamma_2\right)^{c_j}-------(1)
+	\end{gathered}
+	$$
+	
+
+	\end{frame}
+	\begin{frame}
+		This work proposes a relaxing function, Equation (1), where $\gamma_1$ and $\gamma_2$ are regret rates, and the information about misassignment that is carried by $f_j$ and $e_j$ are viewed as prior knowledge in determining the distribution of table assignment probabilities.
+		$$
+		\begin{aligned}
+			& P\left(z_i=j \mid z_{-i}, \mathbf{x}_i, y_i, \theta, G_0, \alpha\right) \\
+			\propto \quad & \begin{cases}g\left(\gamma_1, \gamma_2, e_j, f_j\right) \frac{m_j}{i-1+\alpha} H\left(\mathbf{x}_i, \theta_j\right) & \text { if } j \leq k \\
+				\frac{\alpha}{i-1+\alpha} \int H\left(\mathbf{x}_i, \theta_j\right) \mathrm{d} G_0\left(\theta_j\right) & \text { if } j=k+1\end{cases}------ (2)
+		\end{aligned}
+		$$
+		
+		Equation (2) presents the posterior distribution estimation of online CRP, in which the prior comprises the relaxing function and the prior of the CRP, and $H\left(\mathbf{x}_i, \theta_j\right)$ denotes the likelihood that datum $\mathbf{x}_i$ is a member of class $j$. Notably, the online CRP reduces to the CRP when $f_j=0$ and $e_j=0$ for all $j$.
+		
+		From here, we update class parameters, to check overestimation and under estimation. 
+		
+		Graphical Model of Online Chinese Restaurant
+		Process
+	\end{frame}
+
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.25 \linewidth]{graph.png} 
+		\caption{Graphical Model of Online Chinese Restaurant
+			Process}
+		\label{fig: Source: https://www.scribbr.com/ai-tools/machine-learning/} % Changed the label to a proper one
+	\end{figure}
+
+\begin{equation*}
+	\begin{aligned}
+		z_i|\alpha &\sim \text{Mult(Online CRP}(\alpha)) \\
+		\theta_{z_i}|G_0 &\sim G_0 \\
+		x_i|\theta_{z_i} &\sim F(\theta_{z_i})----- (3)
+	\end{aligned}
+\end{equation*}
+Equation (3) specifies that $z_i$ is predicted class of datum $x_i$. For each datum $x_i$, the predicted label $z_i$ can be sampled using the online CRP. The class parameter $\theta_{z_i}$ is drawn from the base distribution, $G_0$, and each data point $x_i$ is generated by a distribution $F$ associated with parameter $\theta_{z_i}$.
+
+\end{frame}
+
+\begin{frame}{Experimental Results}
+In this presentation, two data sets (Reuters Corpus and Volume I (RCV1) and Wikipedia data set) are used to assess system performance and several methods are compared with the proposed
+	algorithm.
+	
+	
+
+\begin{table}[h]
+	\centering
+	\caption{1: Experimental Results on RCV1 Data Set}
+	\begin{tabular}{lccc}
+		\toprule
+		& Error Rate & Cluster $F_1$ & Execution Time (sec) \\
+		\midrule
+		Online CRP & 0.1477 & 0.8517 & 54,958 \\
+		Last Perceptron & 0.1176 & 0.8905 & 259,512 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{table}[h]
+	\centering
+	\caption{2: Experimental Results on Wikipedia Data Set}
+	\begin{tabular}{lccc}
+		\toprule
+		& Error Rate & Cluster $F_1$ & Execution Time (sec) \\
+		\midrule
+		Online CRP & 0.1776 & 0.7910 & 102,549 \\
+		\bottomrule
+	\end{tabular}
+
+\end{table}
+
+\end{frame}
+
+	\begin{frame}
+		\frametitle{Conclusions}
+	Table 2 shows the
+		online CRP outperforms the variants of Perceptron on Wikipedia data sets.\\
+		Last Perceptron outperforms the proposed method on the
+		RCV1 data set as shown in Table 1, but its execution time
+		is much longer.
+		\begin{itemize}
+			\item This work combines Bayesian nonparametric learning with online to adapt model complexity and parameters to data.
+			\item The experimental results indicate that the proposed method works well and efficiently on massive data sets.
+			\item The future work is to extend the proposed approached to exploratory learning.
+		\end{itemize}
+	\end{frame}
+	
+	\begin{frame}{Reference}
+		
+		\begin{thebibliography}{100}
+			
+			\bibitem{} 
+[1] Online learning: A comprehensive survey,
+		Hoi, Steven CH and Sahoo, Doyen and Lu, Jing and Zhao, Peilin,
+			Neurocomputing,
+			459,
+			249--289,
+			2021,
+			Elsevier
+		
+		
+			
+			
+			\bibitem{} [2]  Liu, Chien-Liang, Tsung-Hsun Tsai, and Chia-Hoang Lee. "Online chinese restaurant process." Proceedings of the 20th ACM SIGKDD international conference on Knowledge discovery and data mining. 2014.
+			
+		\bibitem{}[3]	Weining Shen. " Bayesian Statistical Analysis." Stats 225, University of California Irvine, 2024. Lecture slides.
+			
+			
+		\end{thebibliography} 
+	\end{frame}
+	
+	\begin{frame}
+		\begin{figure}
+			\centering
+		 	\includegraphics[width=0.93\linewidth]{tu.png} 
+		\end{figure}
+		
+	\end{frame}
+\end{document}

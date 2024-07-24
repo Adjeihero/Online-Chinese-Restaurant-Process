@@ -1,0 +1,236 @@
+---
+title: "Online Chinese Restaurant Process"
+author: "Emmanuel Adjei"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    fig_width: 6.5
+    fig_height: 3.5
+geometry: "margin=0.35in"
+editor_options: 
+  markdown: 
+    wrap: 72
+header-includes:
+  - \usepackage{parskip}
+  - \usepackage{blindtext} 
+  - \usepackage{hyperref}
+  - \usepackage{cancel}
+  - \usepackage{url}
+  - \usepackage{amsfonts}
+  - \usepackage{amsthm}
+  - \usepackage{booktabs}
+  - \usepackage{tabularx}
+  - \usepackage{array}
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+  - \usepackage{graphicx}
+  - \usepackage{tabulary}
+  - \usepackage{multicol}
+  - \usepackage{listings}
+  - \usepackage{tikz}
+  - \usepackage{fontawesome}
+  - \usepackage{mathtools}
+  - \usepackage{ClearSans}
+  - \usepackage{url,hyperref}
+ # - \usepackage{sectsty} \allsectionsfont{\centering}
+ # - \usepackage[svgnames, x11names]{xcolor}
+  - \usepackage{geometry}
+  - \geometry{left=2cm, right=2cm, top=3cm, bottom=2.5cm}
+---
+
+```{r, echo=FALSE, message=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', message = FALSE, echo = FALSE)
+#rm(list = ls()) # remove all previously stored objects (if there is any)
+library(tidyverse)
+library(kableExtra)
+library(RColorBrewer)
+library(ggplot2)
+library(knitr)
+library(gtools)
+library(cowplot)
+library(reshape)
+library(dplyr)
+library(reshape2)
+library(directlabels)
+library(readr)
+library(rjags)
+library(combinat)
+library(coda)
+library(lattice)
+library(nlme)
+library(broom)
+library(lme4)
+library(ggplot2)
+library(alr4)
+library(multcomp) 
+library(lmerTest) 
+library(latex2exp)
+library(tidyr)
+library(haven)
+library(GGally)
+library(lmtest)
+library(foreign) # to load .dta file
+library(geepack) # for geeglm()
+ #install.packages("remotes")
+# remotes::install_github("davidsjoberg/ggsankey")
+#library(ggsankey)
+library(gtsummary)
+```
+
+
+
+
+# Abstract {-}
+
+As the Internet, sensor networks, and network traffic grow, processing large volumes of streaming data in near-real-time has become increasingly important. Online machine learning is an effective method for handling streaming data, as it allows the classification model to learn one instance at a time. However, existing online methods typically assume that the number of classes is known in advance, which is unrealistic for large-scale or streaming datasets. This report discusses an online Chinese restaurant process (CRP) algorithm, a nonparametric method that addresses this issue. The proposed method includes a relaxing function as part of the prior and updates parameters based on the consistency between true labels and predicted results. Two Gibbs sampling algorithms are presented for posterior inference. The online CRP is tested on three large datasets, including a dataset from Wikipedia with approximately two million documents, and compared with several online and batch learning algorithms. The experimental results demonstrate that the online CRP performs efficiently and effectively on massive datasets. Additionally, the report proposes two methods for dynamically updating the hyperparameter $\alpha$ based on its posterior distribution and the adaptive nature of online learning [3].
+
+**Keywords:** Adaptive Learning; Chinese Restaurant Process; Nonparametric; Online Learning
+
+# 1. Introduction {-}
+
+Online learning has gained significant interest in machine learning due to its efficiency and scalability, particularly for real-time data streams such as log files, sensor data, and network data. These data sources continuously generate new information, and their underlying distributions often change over time, necessitating adaptive models [3]. A notable advantage of online learning is that the true label is available after each prediction, allowing the model to refine itself and improve future predictions. However, many online learning algorithms require the number of classes to be known in advance, which is often impractical for large datasets where this information is unknown. Bayesian nonparametric (BNP) models, such as those using the Dirichlet process (DP) [4], address this issue by allowing model complexity to grow with the data. The Chinese restaurant process (CRP), a representation of the DP mixture model, supports flexible clustering without predefining the number of classes. This study introduces a nonparametric online learning algorithm, the online Chinese restaurant process (online CRP), which automatically determines the appropriate model complexity from the data and adapts as more instances are observed. The online CRP employs a relaxing function as part of the prior and updates parameters based on the consistency between true labels and predicted results, ensuring continuous improvement in model accuracy.
+
+# 2. Online Chinese Restaurant Process {-}
+
+The goal of clustering is to uncover latent information in data by grouping objects such that those in the same cluster are more similar to each other than to those in different clusters. The finite mixture model (FMM) is commonly used for clustering, assuming a finite number of models, each with associated parameters, that generate the data points. Clustering involves inferring these parameters and determining which model generated each data point. The Bayesian nonparametric mixture model, which is called a Chinese restaurant process mixture or a
+Dirichlet process mixture, infers the number of clusters from the data and allows the number of clusters to grow as new data instances are observed [5].
+
+## 2.1. Notation {-}
+
+In this report, the Chinese restaurant process (CRP) metaphor is used for notation. A customer $\mathbf{x}_i$ represents a data point, a table represents a cluster, and the dish at table $j$ corresponds to the parameter of class $j$, denoted as $\theta_j$. The number of customers (data points) at table $j$ is $m_j$, and $H\left(\mathbf{x}_i, \theta_j\right)$ represents the likelihood that $\mathbf{x}_i$ belongs to class $j$. Unlike the standard CRP, the online CRP allows each customer to move to another table after their initial assignment, with $z_i$ and $y_i$ denoting the initial and final tables for customer $\mathbf{x}_i$. The online CRP is nonparametric, with an infinite number of possible tables and the number of occupied tables denoted by $k$. The base distribution is $G_0$ and the concentration parameter is $\alpha$. A relaxing function $g\left(\gamma_1, \gamma_2, e_j, f_j\right)$ is introduced to adjust the prior in the online CRP, where $\gamma_1$ and $\gamma_2$ are regret rates, and $f_j$ and $e_j$ track the misassignment of previous customers to table $j$. The notation $\mathbf{x}_{-i}$ represents all customers except for customer $i$, and $\mathbf{x}_{-i, c}$ represents all customers in class $c$ except for customer $i$, with $y_{-i}$ and $z_{-i}$ having similar meanings.
+
+
+## 2.2 Methods {-}
+
+This study employs the Chinese Restaurant Process (CRP) as a discrete-time stochastic process to define a distribution over partitions, representing the assumed prior distribution over cluster structures. In this metaphor, a customer $\mathbf{x}_i$ represents a data point, a table represents a cluster, and the dish at table $j$ corresponds to the parameter of class $j$, denoted as $\theta_j$. The number of customers at table $j$ is $m_j$, and $H(\mathbf{x}_i, \theta_j)$ represents the likelihood that $\mathbf{x}_i$ belongs to class $j$. The CRP is mathematically expressed as [1]: 
+
+$$P\left(z_i=j \mid z_{-i}, \alpha\right) \quad \propto \begin{cases}\frac{m_j}{i-1+\alpha} & \text { if } j \leq k \\
+&\\
+\frac{\alpha}{i-1+\alpha} & \text { if } j=k+1\end{cases}$$, 
+
+where $z_i$ is the table assignment for customer $i$, $z_{-i}$ represents the table assignments of all other customers, and $k$ is the current number of tables. This nonparametric process allows the number of tables to grow with the number of customers. However, exact computation of posterior expectations for a Dirichlet Process (DP) mixture model is infeasible, necessitating Markov Chain Monte Carlo (MCMC) methods such as Gibbs sampling for approximation. To address the limitations of the standard CRP, we introduce the online CRP, which allows each customer to move to another table after their initial assignment and adapts as more data instances are observed. The number of occupied tables is denoted by $k$, with $G_0$ as the base distribution and $\alpha$ as the concentration parameter. A relaxing function $g(\gamma_1, \gamma_2, e_j, f_j)$ is introduced to adjust the prior, where $\gamma_1$ and $\gamma_2$ are regret rates, and $f_j$ and $e_j$ track the misassignment of previous customers to table $j$. It is noted that table assignments for the $i$-th customer comprise two results: one assigned by the waiter, denoted as $z_i$, and the other being the final sitting table, represented as $y_i$. For table $j$ and customer $i$, $f_j$ and $e_j$ track the misassignment of the previous $i-1$ customers as shown in the equations $f_j=\displaystyle\sum_{a=1}^{i-1} \mathbb{I}\left\{y_a=j \wedge z_a \neq j\right\}$ and $e_j=\displaystyle\sum_{a=1}^{i-1} \mathbb{I}\left\{z_a=j \wedge y_a \neq j\right\}$, where $\mathbb{I}$ is an indicator function. The relaxing function is then defined as $g\left(\gamma_1, \gamma_2, e_j, f_j\right)=\displaystyle\left(1+\gamma_1\right)^{f_j}\left(1-\gamma_2\right)^{e_j}$. This report discuses a relaxing function, where $\gamma_1$ and $\gamma_2$ are regret rates, and the information about misassignment that is carried by $f_j$ and $e_j$ is viewed as prior knowledge in determining the distribution of table assignment probabilities. The posterior distribution estimation of online CRP is given by 
+
+$$\begin{aligned}
+			& P\left(z_i=j \mid z_{-i}, \mathbf{x}_i, y_i, \theta, G_0, \alpha\right) 
+			\propto \quad & \begin{cases}g\left(\gamma_1, \gamma_2, e_j, f_j\right) \frac{m_j}{i-1+\alpha} H\left(\mathbf{x}_i, \theta_j\right) & \text { if } j \leq k \\
+			&\\
+				\frac{\alpha}{i-1+\alpha} \int H\left(\mathbf{x}_i, \theta_j\right) \mathrm{d} G_0\left(\theta_j\right) & \text { if } j=k+1\end{cases}
+		\end{aligned}$$ 
+		
+where $H\left(\mathbf{x}_i, \theta_j\right)$ denotes the likelihood that datum $\mathbf{x}_i$ is a member of class $j$. Notably, the online CRP reduces to the CRP when $f_j=0$ and $e_j=0$ for all $j$. The inference and learning process in the online CRP involves two Gibbs sampling algorithms for posterior inference. The first algorithm updates the table assignments $z_i$ for each customer $i$ based on the posterior probabilities described above. The second algorithm integrates the relaxing function $g(\gamma_1, \gamma_2, e_j, f_j)$ to adjust model parameters dynamically. This function affects the posterior probability calculation by incorporating the regret rates $\gamma_1$ and $\gamma_2$, and the misassignment tracking terms $e_j$ and $f_j$. This dynamic adjustment improves the model's ability to handle changes in data distribution. Additionally, two methods are proposed for updating the hyperparameter $\alpha$. The first method is based on the posterior distribution of $\alpha$: $\alpha \mid \text{data} \sim \text{Posterior}(\alpha)$. The second method leverages the adaptability of online learning to dynamically adjust $\alpha$: $\alpha_{t+1} = \alpha_t + \Delta \alpha$, where $\Delta \alpha$ is a function of the observed data and the current model state. These methods ensure that $\alpha$ adapts to changes in the data, enhancing the model's flexibility and accuracy.
+
+
+
+## 2.3 Inference and Learning {-}
+
+This section describes the probabilistic model used in the online Chinese Restaurant Process (CRP) for clustering data points. The model is defined by three hierarchical levels. At the first level, the table assignments \(z_i\) for each data point \(i\) are generated from a Multinomial distribution based on the online CRP with parameter \(\alpha\), denoted as
+
+\begin{equation*}
+\begin{aligned}
+z_i|\alpha &\sim \text{Mult(Online CRP}(\alpha)) \\
+\theta_{z_i}|G_0 &\sim G_0 \\
+x_i|\theta_{z_i} &\sim F(\theta_{z_i}) 
+\end{aligned}
+\end{equation*}
+
+At the second level, the parameter \(\theta_{z_i}\) associated with each table assignment \(z_i\) is drawn from a base distribution \(G_0\). Finally, at the third level, each data point \(x_i\) is generated from a distribution \(F(\theta_{z_i})\) conditioned on the parameter \(\theta_{z_i}\). This hierarchical model encapsulates the process of assigning data points to clusters, determining cluster parameters, and generating data points within each cluster, thereby facilitating the inference and learning process in the online CRP framework. From Figure 1, the graphical model representation below illustrates these relationships, with the arrows indicating dependencies between the variables \(\alpha\), \(z_i\), \(\theta_{z_i}\), and \(x_i\).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{graph.png}
+\caption{Graphical model of the online CRP}
+\end{figure}
+
+# 3. Experiment {-}
+
+In the experiments, the proposed online Chinese Restaurant Process (CRP) algorithm was evaluated using three datasets: 20 Newsgroups, RCV1, and Wikipedia. The algorithm assumes a multinomial distribution for text data with parameters following a Dirichlet distribution, enabling collapsed sampling. The 20 Newsgroups dataset includes approximately 20,000 documents across 20 categories, while the RCV1 dataset, after filtering, contains 534,135 documents across 53 categories. The Wikipedia dataset comprises around two million documents filtered by term frequency and category information. Five-fold cross-validation was used for the 20 Newsgroups dataset, while random sampling was employed for RCV1 and Wikipedia due to their large sizes. The performance of the online CRP was compared with various online and batch learning algorithms, including methods from the LIBOL library and Perceptron variants. Results indicated that the online CRP outperformed other methods in terms of execution time and classification performance, particularly with large datasets where memory limitations affected kernelized methods. The experiments demonstrated the online CRP's efficiency and robustness in handling large-scale text classification tasks.
+
+\begin{table}[h!]
+\centering
+\caption{Experimental Results on 20 Newsgroups with Online Learning Setting}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Error Rate} & \textbf{Cluster $F_1$} & \textbf{Execution Time (sec)} \\
+\midrule
+Online CRP & $0.2471 \pm 0.0057$ & $0.6056 \pm 0.0045$ & $277 \pm 7$ \\
+ROMMA & $0.9451 \pm 0.0123$ & $0.0950 \pm 0.0003$ & $92 \pm 0$ \\
+aROMMA & $0.9449 \pm 0.0128$ & $0.0950 \pm 0.0003$ & $84 \pm 1$ \\
+OGD & $0.3931 \pm 0.0396$ & $0.4056 \pm 0.0432$ & $85 \pm 1$ \\
+PA & $0.9432 \pm 0.0170$ & $0.0950 \pm 0.0003$ & $84 \pm 0$ \\
+PA-I & $0.2762 \pm 0.0042$ & $0.5507 \pm 0.0058$ & $82 \pm 2$ \\
+PA-II & $0.2693 \pm 0.0036$ & $0.5605 \pm 0.0046$ & $82 \pm 2$ \\
+CW & $0.2362 \pm 0.0027$ & $0.6076 \pm 0.0040$ & $48,382 \pm 1,167$ \\
+AROW & $0.4423 \pm 0.0197$ & $0.3322 \pm 0.0232$ & $46,865 \pm 675$ \\
+SCW-I & $0.2358 \pm 0.0036$ & $0.6083 \pm 0.0047$ & $46,276 \pm 432$ \\
+SCW-II & $0.2345 \pm 0.0034$ & $0.6102 \pm 0.0054$ & $46,360 \pm 455$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Experimental Results on 20 Newsgroups with Batch Learning Setting}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Error Rate} & \textbf{Cluster $F_1$} & \textbf{Execution Time (sec)} \\
+\midrule
+Online CRP & $0.2010 \pm 0.0100$ & $0.6790 \pm 0.0224$ & $313 \pm 9$ \\
+Last Perceptron & $0.3904 \pm 0.0313$ & $0.4005 \pm 0.0302$ & $256 \pm 27$ \\
+Voted Perceptron & $0.3206 \pm 0.0127$ & $0.4938 \pm 0.0187$ & $267 \pm 11$ \\
+Average Perceptron & $0.3928 \pm 0.0391$ & $0.4100 \pm 0.0460$ & $269 \pm 9$ \\
+Kernel Last Perceptron & $0.3903 \pm 0.0304$ & $0.4060 \pm 0.0395$ & $63 \pm 3$ \\
+Kernel Voted Perceptron & $0.3100 \pm 0.0287$ & $0.5085 \pm 0.0399$ & $407 \pm 19$ \\
+Kernel Average Perceptron & $0.3936 \pm 0.0209$ & $0.3972 \pm 0.0360$ & $404 \pm 5$ \\
+Online Logistic Regression & $0.3177 \pm 0.0162$ & $0.5010 \pm 0.0196$ & $113,527 \pm 2,755$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Experimental Results on RCV1 Data Set}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Error Rate} & \textbf{Cluster $F_1$} & \textbf{Execution Time (sec)} \\
+\midrule
+Online CRP & $0.1477$ & $0.8517$ & $54,958$ \\
+Last Perceptron & $0.1176$ & $0.8905$ & $259,512$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Experimental Results on Wikipedia Data Set}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Error Rate} & \textbf{Execution Time (sec)} \\
+\midrule
+Online CRP & $0.3602$ & $112,030$ \\
+Last Perceptron & $0.3888$ & $2,249,000$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+# 4. Discussion and Analysis {-}
+
+The experimental results in Table 1 show that the online Chinese Restaurant Process (CRP) performs similarly to some of the second-order algorithms in the LIBOL library. Second-order online learning methods like CW, SCW-I, and SCW-II exhibit strong performance on the 20 Newsgroups data set, but their execution times are significantly longer compared to first-order methods due to the complexity involved in calculating the covariance matrix for high-dimensional data sets. Tables 2 and 4 demonstrate that the online CRP outperforms variants of the Perceptron algorithm on both the 20 Newsgroups and Wikipedia data sets. Although the Last Perceptron algorithm achieves better results on the RCV1 data set (Table 3), its execution time is much longer than that of the proposed method. The one-against-all technique is employed to extend binary classifiers, such as Perceptron variants, to multi-class scenarios, necessitating prior knowledge of the number of classes. In contrast, the proposed online CRP dynamically adapts to the complexity of the data without requiring the number of classes in advance, making it highly suitable for processing large-scale or streaming data sets. To assess the algorithm's performance on streaming data, the proposed method was applied to a temporally sorted 20 Newsgroups data set, yielding results consistent with those in Table 2. The experiments covered both balanced and imbalanced data sets, revealing that the online CRP can efficiently handle both types. Additionally, the method completes classification tasks within reasonable time frames, even for the two-million-document Wikipedia data set. The proposed method's performance is analyzed and compared with supervised learning methods across different training document sizes, and the parameter settings are discussed to provide comprehensive insights into the algorithm's effectiveness and efficiency.
+
+
+# 5. Conclusion {-}
+
+This study introduces a nonparametric online learning algorithm that dynamically adjusts the model parameters and complexity as new data instances are observed. The online CRP demonstrates greater flexibility in handling massive and streaming data sets compared to traditional online learning algorithms. By proposing a novel prior and model parameter updating mechanism based on the properties of online learning, this work ensures that the online CRP performs effectively and efficiently on large-scale data sets. The experimental results reveal that while the online CRP benefits from an increased number of training examples, the performance improvement plateaus beyond a certain threshold. This suggests a potential direction for future research: integrating the online CRP with stochastic gradient descent (SGD) to manage massive data sets when training time is a critical factor. The core of this method lies in its nonparametric online learning approach, which offers a more flexible and realistic means of dealing with streaming data. Nonparametric models make fewer assumptions, allowing the data to guide the learning process, while online learning enables the model to continuously adapt to newly observed data.
+
+
+# 6. References {-}
+			
+1. Weining Shen. " Bayesian Statistical Analysis." Stats 225, University of California Irvine, 2024. Lecture slides.
+
+2. Online learning: A comprehensive survey, Hoi, Steven CH and Sahoo, Doyen and Lu, Jing and Zhao, Peilin, Neurocomputing, 459, 249--289, 2021, Elsevier.
+			
+3. Liu, Chien-Liang, Tsung-Hsun Tsai, and Chia-Hoang Lee. "Online chinese restaurant process." Proceedings of the 20th ACM SIGKDD international conference on Knowledge discovery and data mining. 2014.
+
+4. Ferguson, T.S., 1973. A Bayesian analysis of some nonparametric problems. The annals of statistics, pp.209-230.
+
+5. S. J. Gershman and D. M. Blei. A tutorial on Bayesian nonparametric models. Journal of Mathematical Psychology, 56(1):1–12, Feb. 2012.
